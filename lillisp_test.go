@@ -30,20 +30,6 @@ func TestTokenizer(t *testing.T) {
 
 	}
 
-	/**
-		s := []struct {
-		i int
-		b bool
-	}{
-		{2, true},
-		{3, false},
-		{5, true},
-		{7, true},
-		{11, false},
-		{13, true},
-	}
-	*/
-
 	t.Log(`Testing moar complicated tokenization`)
 	{
 		input := []byte("(asd asd as)  (  ( asd a ))a)")
@@ -57,21 +43,14 @@ func TestTokenizer(t *testing.T) {
 		}{
 			{1, "("},
 			{3, "asd"},
-			{1, ""},
-			{3, "asd"},
-			{1, ""},
-			{2, "as"},
+			{4, "asd"},
+			{3, "as"},
 			{1, ")"},
-			{2, ""},
-			{1, "("},
-			{2, ""},
-			{1, "("},
-			{1, ""},
-			{3, "asd"},
-			{1, ""},
-			{1, "a"},
-			{1, ""},
-			{1, ")"},
+			{3, "("},
+			{3, "("},
+			{4, "asd"},
+			{2, "a"},
+			{2, ")"},
 			{1, ")"},
 			{1, "a"},
 			{1, ")"},
