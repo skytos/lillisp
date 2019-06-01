@@ -32,20 +32,20 @@ func isSpace(r rune) bool {
 	return false
 }
 
-func scanWord(data []byte) (advance int, token []byte, err error) {
+func scanWord(data []byte, start int, atEOF bool) (advance int, token []byte, err error) {
 	// Scan until space, marking end of word.
-	// We know that the next character is not a space!
-	for width, i := 0, 0; i < len(data); i += width {
+	for width, i := 0, start; i < len(data); i += width {
 		var r rune
-		r, width = utf8.DecodeRune(data[i:])
-		if isSpace(r) {
-			return i, data[0:i], nil
-		} else if r == '(' || r == ')' {
-			return i, data[0:i], nil
+		r, width = utf8.DecodeRune(data[start+i:])
+		if isSpace(r) || r == '(' || r == ')' {
+			return start + i, data[start : start+i], nil
 		}
 	}
-	// THIS IS PROBABLY WRONG
-	return len(data), data[0:], nil
+	if atEOF && len(data) > start {
+		return len(data), data[start:], nil
+	} else {
+		return 0, nil, nil
+	}
 }
 
 func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -58,30 +58,19 @@ func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			break
 		}
 	}
-	if start > 0 {
-		return start, nil, nil
-	}
 
 	// get a character
-	r, width := utf8.DecodeRune(data)
+	r, width := utf8.DecodeRune(data[start:])
 
 	switch r {
 	case '(', ')':
-		return width, data[0:width], nil
+		return start + width, data[start : start+width], nil
 	default:
-		return scanWord(data)
+		return scanWord(data, start, atEOF)
 	}
-
-	// If we're at EOF, we have a final, non-empty, non-terminated word. Return it
-	if atEOF && len(data) > start {
-		return len(data), data[start:], nil
-	}
-	// Request more data.
-	return start, nil, nil
 }
 
 func main() {
-	fmt.Printf("lisp 123\n")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(scan)
 	for scanner.Scan() {
