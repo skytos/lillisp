@@ -68,3 +68,11 @@ func TestTokenizer(t *testing.T) {
 		t.Logf("\t%v  Pass!", checkMark)
 	}
 }
+
+func TestTokenizerLeadingSpaces(t *testing.T) {
+	input := "   a"
+	width, token, err := scan([]byte(input), true)
+	if width != 4 || string(token) != "a" || err != nil {
+		t.Errorf("fail %v, %s, %v", width, token, err)
+	}
+}

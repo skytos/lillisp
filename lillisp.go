@@ -36,9 +36,9 @@ func scanWord(data []byte, start int, atEOF bool) (advance int, token []byte, er
 	// Scan until space, marking end of word.
 	for width, i := 0, start; i < len(data); i += width {
 		var r rune
-		r, width = utf8.DecodeRune(data[start+i:])
+		r, width = utf8.DecodeRune(data[i:])
 		if isSpace(r) || r == '(' || r == ')' {
-			return start + i, data[start : start+i], nil
+			return i, data[start:i], nil
 		}
 	}
 	if atEOF && len(data) > start {
