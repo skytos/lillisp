@@ -68,3 +68,16 @@ func TestTokenizer(t *testing.T) {
 		t.Logf("\t%v  Pass!", checkMark)
 	}
 }
+
+func TestPrintItem(t *testing.T) {
+	var p, Nil *Pair
+	p = nil
+	PrintItem(p) // should show ()
+
+	p = Cons("bar", Nil)
+	p = Cons("foo", p)
+	PrintItem(p) // should show (foo bar)
+
+	p = Cons(Cons("a", Nil), p)
+	PrintItem(p) // should show ((a) foo bar)
+}

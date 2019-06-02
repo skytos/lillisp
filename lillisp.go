@@ -76,17 +76,17 @@ func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 }
 
 // make a new Pair
-func cons(a interface{}, b interface{}) *Pair {
+func Cons(a interface{}, b interface{}) *Pair {
 	return &Pair{a, b}
 }
 
 // get the first item of a Pair
-func car(p *Pair) interface{} {
+func Car(p *Pair) interface{} {
 	return p.car
 }
 
 // get the second item of a Pair
-func cdr(p *Pair) interface{} {
+func Cdr(p *Pair) interface{} {
 	return p.cdr
 }
 
@@ -98,11 +98,11 @@ func process_list(scanner *bufio.Scanner) *Pair {
 	token := scanner.Text()
 	if token == "(" {
 		// start a new list and then add that to the one we're currently working on
-		return cons(process_list(scanner), process_list(scanner))
+		return Cons(process_list(scanner), process_list(scanner))
 	} else if token == ")" {
 		return nil
 	} else {
-		return cons(token, process_list(scanner))
+		return Cons(token, process_list(scanner))
 	}
 }
 
@@ -118,7 +118,7 @@ func process_item(scanner *bufio.Scanner) bool {
 		list := process_list(scanner)
 		// and  print it
 		fmt.Print("list: ")
-		print_item(list)
+		PrintItem(list)
 		fmt.Println()
 	} else if token == ")" {
 		// we're not in a list so we shouldn't see ")"
@@ -126,18 +126,18 @@ func process_item(scanner *bufio.Scanner) bool {
 	} else {
 		// must be an atom so print it
 		fmt.Print("atom: ")
-		print_item(token)
+		PrintItem(token)
 		fmt.Println()
 	}
 	return true
 }
 
 // print an item, duh
-func print_item(i interface{}) {
+func PrintItem(i interface{}) {
 	p, is_pair := i.(*Pair)
 	if is_pair {
 		fmt.Print("(")
-		print_list(p, false)
+		printList(p, false)
 		fmt.Print(")")
 	} else {
 		// must be an atom
@@ -147,17 +147,17 @@ func print_item(i interface{}) {
 }
 
 // prints the contents of a list
-// unless you're recursing pass false for add_space
-func print_list(l *Pair, add_space bool) {
+// unless you're recursing pass false for addSpace
+func printList(l *Pair, addSpace bool) {
 	if l == nil {
 		// we're at the end of the list
 		return
 	} else {
-		if add_space {
+		if addSpace {
 			fmt.Print(" ") // so there's a gap between items
 		}
-		print_item(car(l))
-		print_list(cdr(l).(*Pair), true) // print the rest, this assumes cdr is a pair
+		PrintItem(Car(l))
+		printList(Cdr(l).(*Pair), true) // print the rest, this assumes Cdr is a pair
 	}
 }
 
