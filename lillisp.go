@@ -70,10 +70,57 @@ func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	}
 }
 
+type Pair struct {
+  car interface{}
+  cdr interface{}
+}
+type Atom string
+
+func cons(a interface{}, b interface{}) *Pair {
+  return &Pair{a, b}
+}
+func car(p *Pair) interface{} {
+  return p.car
+}
+func cdr(p *Pair) interface{} {
+  return p.cdr
+}
+
+func process_list(scanner *bufio.Scanner) *Pair {
+  if (!scanner.Scan()) {
+		panic("unmatched (") // we're in a list and ran out of tokens
+  }
+  token := scanner.Text()
+  if (token == "(") {
+    // start a new list and then add that to the one we're currently working on
+    return cons(process_list(scanner), process_list(scanner))
+  } else if (token == ")") {
+    return nil
+  } else {
+    return cons(token, process_list(scanner))
+  }
+}
+
+func process_item(scanner *bufio.Scanner) {
+  if (!scanner.Scan()) {
+    return // not sure what to do here, maybe panic?
+  }
+  token := scanner.Text()
+  if (token == "(") {
+    list := process_list(scanner)
+    fmt.Printf("list: %v\n", list)
+  } else if (token == ")") {
+		panic("unmatched )")
+  } else {
+    fmt.Printf("atom: %v\n", token)
+  }
+}
+
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(scan)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
+  process_item(scanner)
+	// for scanner.Scan() {
+	// 	fmt.Println(scanner.Text())
+	// }
 }
