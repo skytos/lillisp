@@ -7,6 +7,11 @@ import (
 	"unicode/utf8"
 )
 
+type Pair struct {
+	car interface{}
+	cdr interface{}
+}
+
 // isSpace reports whether the character is a Unicode white space character.
 // We avoid dependency on the unicode package, but check validity of the implementation
 // in the tests.
@@ -70,22 +75,22 @@ func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	}
 }
 
-type Pair struct {
-	car interface{}
-	cdr interface{}
-}
-type Atom string
-
+// make a new Pair
 func cons(a interface{}, b interface{}) *Pair {
 	return &Pair{a, b}
 }
+
+// get the first item of a Pair
 func car(p *Pair) interface{} {
 	return p.car
 }
+
+// get the second item of a Pair
 func cdr(p *Pair) interface{} {
 	return p.cdr
 }
 
+// make a list to represent the tokens being scanned
 func process_list(scanner *bufio.Scanner) *Pair {
 	if !scanner.Scan() {
 		panic("unmatched (") // we're in a list and ran out of tokens
@@ -101,26 +106,65 @@ func process_list(scanner *bufio.Scanner) *Pair {
 	}
 }
 
-func process_item(scanner *bufio.Scanner) {
+// scan an item and print a representation of it, return true if more to do
+func process_item(scanner *bufio.Scanner) bool {
 	if !scanner.Scan() {
-		return // not sure what to do here, maybe panic?
+		// out of tokens
+		return false
 	}
 	token := scanner.Text()
 	if token == "(" {
+		// start a new list
 		list := process_list(scanner)
-		fmt.Printf("list: %v\n", list)
+		// and  print it
+		fmt.Print("list: ")
+		print_item(list)
+		fmt.Println()
 	} else if token == ")" {
+		// we're not in a list so we shouldn't see ")"
 		panic("unmatched )")
 	} else {
-		fmt.Printf("atom: %v\n", token)
+		// must be an atom so print it
+		fmt.Print("atom: ")
+		print_item(token)
+		fmt.Println()
+	}
+	return true
+}
+
+// print an item, duh
+func print_item(i interface{}) {
+	p, is_pair := i.(*Pair)
+	if is_pair {
+		fmt.Print("(")
+		print_list(p, false)
+		fmt.Print(")")
+	} else {
+		// must be an atom
+		a := i.(string)
+		fmt.Printf("%v", a)
+	}
+}
+
+// prints the contents of a list
+// unless you're recursing pass false for add_space
+func print_list(l *Pair, add_space bool) {
+	if l == nil {
+		// we're at the end of the list
+		return
+	} else {
+		if add_space {
+			fmt.Print(" ") // so there's a gap between items
+		}
+		print_item(car(l))
+		print_list(cdr(l).(*Pair), true) // print the rest, this assumes cdr is a pair
 	}
 }
 
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(scan)
-	process_item(scanner)
-	// for scanner.Scan() {
-	// 	fmt.Println(scanner.Text())
-	// }
+	// read print loop
+	for process_item(scanner) {
+	}
 }
