@@ -91,23 +91,23 @@ func Cdr(p *Pair) interface{} {
 }
 
 // make a list to represent the tokens being scanned
-func process_list(scanner *bufio.Scanner) *Pair {
+func processList(scanner *bufio.Scanner) *Pair {
 	if !scanner.Scan() {
 		panic("unmatched (") // we're in a list and ran out of tokens
 	}
 	token := scanner.Text()
 	if token == "(" {
 		// start a new list and then add that to the one we're currently working on
-		return Cons(process_list(scanner), process_list(scanner))
+		return Cons(processList(scanner), processList(scanner))
 	} else if token == ")" {
 		return nil
 	} else {
-		return Cons(token, process_list(scanner))
+		return Cons(token, processList(scanner))
 	}
 }
 
 // scan an item and print a representation of it, return true if more to do
-func process_item(scanner *bufio.Scanner) bool {
+func processItem(scanner *bufio.Scanner) bool {
 	if !scanner.Scan() {
 		// out of tokens
 		return false
@@ -115,7 +115,7 @@ func process_item(scanner *bufio.Scanner) bool {
 	token := scanner.Text()
 	if token == "(" {
 		// start a new list
-		list := process_list(scanner)
+		list := processList(scanner)
 		// and  print it
 		fmt.Print("list: ")
 		PrintItem(list)
@@ -134,8 +134,8 @@ func process_item(scanner *bufio.Scanner) bool {
 
 // print an item, duh
 func PrintItem(i interface{}) {
-	p, is_pair := i.(*Pair)
-	if is_pair {
+	p, isPair := i.(*Pair)
+	if isPair {
 		fmt.Print("(")
 		printList(p, false)
 		fmt.Print(")")
@@ -165,6 +165,6 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(scan)
 	// read print loop
-	for process_item(scanner) {
+	for processItem(scanner) {
 	}
 }
