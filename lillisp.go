@@ -7,6 +7,11 @@ import (
 	"unicode/utf8"
 )
 
+type Pair struct {
+	car interface{}
+	cdr interface{}
+}
+
 // isSpace reports whether the character is a Unicode white space character.
 // We avoid dependency on the unicode package, but check validity of the implementation
 // in the tests.
@@ -70,10 +75,96 @@ func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	}
 }
 
+// make a new Pair
+func Cons(a interface{}, b interface{}) *Pair {
+	return &Pair{a, b}
+}
+
+// get the first item of a Pair
+func Car(p *Pair) interface{} {
+	return p.car
+}
+
+// get the second item of a Pair
+func Cdr(p *Pair) interface{} {
+	return p.cdr
+}
+
+// make a list to represent the tokens being scanned
+func processList(scanner *bufio.Scanner) *Pair {
+	if !scanner.Scan() {
+		panic("unmatched (") // we're in a list and ran out of tokens
+	}
+	token := scanner.Text()
+	if token == "(" {
+		// start a new list and then add that to the one we're currently working on
+		return Cons(processList(scanner), processList(scanner))
+	} else if token == ")" {
+		return nil
+	} else {
+		return Cons(token, processList(scanner))
+	}
+}
+
+// scan an item and print a representation of it, return true if more to do
+func processItem(scanner *bufio.Scanner) bool {
+	if !scanner.Scan() {
+		// out of tokens
+		return false
+	}
+	token := scanner.Text()
+	if token == "(" {
+		// start a new list
+		list := processList(scanner)
+		// and  print it
+		fmt.Print("list: ")
+		PrintItem(list)
+		fmt.Println()
+	} else if token == ")" {
+		// we're not in a list so we shouldn't see ")"
+		panic("unmatched )")
+	} else {
+		// must be an atom so print it
+		fmt.Print("atom: ")
+		PrintItem(token)
+		fmt.Println()
+	}
+	return true
+}
+
+// print an item, duh
+func PrintItem(i interface{}) {
+	p, isPair := i.(*Pair)
+	if isPair {
+		fmt.Print("(")
+		printList(p, false)
+		fmt.Print(")")
+	} else {
+		// must be an atom
+		a := i.(string)
+		fmt.Printf("%v", a)
+	}
+}
+
+// prints the contents of a list
+// unless you're recursing pass false for addSpace
+func printList(l *Pair, addSpace bool) {
+	if l == nil {
+		// we're at the end of the list
+		return
+	} else {
+		if addSpace {
+			fmt.Print(" ") // so there's a gap between items
+		}
+		PrintItem(Car(l))
+		printList(Cdr(l).(*Pair), true) // print the rest, this assumes Cdr is a pair
+	}
+}
+
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(scan)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+	// read print loop
+	for processItem(scanner) {
 	}
 }
