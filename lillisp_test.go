@@ -78,8 +78,7 @@ func TestTokenizerLeadingSpaces(t *testing.T) {
 }
 
 func TestPrintItem(t *testing.T) {
-	var p, Nil *Pair
-	p = nil
+	var p *Pair
 	PrintItem(p) // should show ()
 
 	p = Cons("bar", Nil)
@@ -88,4 +87,58 @@ func TestPrintItem(t *testing.T) {
 
 	p = Cons(Cons("a", Nil), p)
 	PrintItem(p) // should show ((a) foo bar)
+}
+
+func TestEq(t *testing.T) {
+	p := Cons("qwe", Nil)
+
+	tests := []struct {
+		a, b, result interface{}
+	}{
+		{Nil, Nil, "t"},
+		{"abc", "abc", "t"},
+		{"abc", "ABC", Nil},
+		{"abc", Nil, Nil},
+		{Nil, "abc", Nil},
+		{p, "abc", Nil},
+		{p, p, Nil}, // they're the same but not an atom or nil
+	}
+	for _, test := range tests {
+		result := Eq(test.a, test.b)
+		if result != test.result {
+			t.Errorf("fail Eq(%v, %v) == %v, not %v\n", test.a, test.b, result, test.result)
+		}
+	}
+}
+
+func TestAtom(t *testing.T) {
+	p := Cons("qwe", Nil)
+
+	tests := []struct {
+		a, result interface{}
+	}{
+		{Nil, "t"},
+		{"abc", "t"},
+		{p, Nil},
+	}
+	for _, test := range tests {
+		result := Atom(test.a)
+		if result != test.result {
+			t.Errorf("fail Atom(%v) == %v, not %v\n", test.a, result, test.result)
+		}
+	}
+}
+
+func TestEval(t *testing.T) {
+	tests := []struct {
+		a, result interface{}
+	}{
+		{Cons("quote", Cons("t", Nil)), "t"},
+	}
+	for _, test := range tests {
+		result := Eval(test.a)
+		if result != test.result {
+			t.Errorf("fail Eval(%v) == %v, not %v\n", test.a, result, test.result)
+		}
+	}
 }

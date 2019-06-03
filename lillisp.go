@@ -12,6 +12,8 @@ type Pair struct {
 	cdr interface{}
 }
 
+var Nil *Pair
+
 // isSpace reports whether the character is a Unicode white space character.
 // We avoid dependency on the unicode package, but check validity of the implementation
 // in the tests.
@@ -88,6 +90,49 @@ func Car(p *Pair) interface{} {
 // get the second item of a Pair
 func Cdr(p *Pair) interface{} {
 	return p.cdr
+}
+
+// returns atom "t" when a and b are both Nil or the same atom otherwise returns Nil
+func Eq(a, b interface{}) interface{} {
+	ap, aIsPair := a.(*Pair)
+	bp, bIsPair := b.(*Pair)
+	if aIsPair && bIsPair && ap == nil && bp == nil { // both Nil
+		return "t"
+	} else if !aIsPair && !bIsPair && a.(string) == b.(string) { // same atom
+		return "t"
+	} else {
+		return Nil
+	}
+}
+
+// returns "t" when a is an atom or Nil
+func Atom(a interface{}) interface{} {
+	ap, isPair := a.(*Pair)
+	if isPair && ap == Nil || !isPair {
+		return "t"
+	} else {
+		return Nil
+	}
+}
+
+// evaluates exp
+func Eval(exp interface{}) interface{} {
+	return "t"
+}
+
+// expects a list of options where each option is a list of 2 items:
+// the first being a condition and the second the expression to evaluate
+// if the condition evalutes to true
+func Cond(options *Pair) interface{} {
+	if options == Nil {
+		panic("Cond: no true conditions")
+	}
+	test, isPair := Eval(Car(Car(options).(*Pair))).(*Pair)
+	if !isPair || test != Nil {
+		return Eval(Car(Cdr(Car(options).(*Pair)).(*Pair)))
+	} else {
+		return Cond(Cdr(options).(*Pair))
+	}
 }
 
 // make a list to represent the tokens being scanned
