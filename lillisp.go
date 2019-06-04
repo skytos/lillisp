@@ -163,7 +163,7 @@ func Cdr(p interface{}) interface{} {
 // processList make a list to represent the tokens being scanned
 func processList(scanner *bufio.Scanner) *Pair {
 	if !scanner.Scan() {
-		// panic("unmatched (") // we're in a list and ran out of tokens
+		panic("unmatched (") // we're in a list and ran out of tokens
 	}
 	token := scanner.Text()
 	fmt.Printf("token: %s\n", token)
