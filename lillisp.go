@@ -49,21 +49,13 @@ func toFunc(p interface{}) (func(a Atom, b Atom) Atom, bool) {
 	return funcMap[op], true
 }
 
-func toPair(p interface{}) (*Pair, bool) {
-	pair, ok := p.(*Pair)
-	if !ok {
-		return nil, false
-	}
-	return pair, true
-}
-
 func eval(p interface{}) Atom {
 	if p == nil {
 		panic("Tried to eval nil!")
 	}
 
 	// p is an Atom, return it
-	if _, success := toPair(p); success == false {
+	if _, isPair := p.(*Pair); isPair == false {
 		return p
 	}
 
@@ -146,7 +138,7 @@ func Cons(a interface{}, b interface{}) *Pair {
 
 // Car get the first item of a Pair
 func Car(p interface{}) interface{} {
-	if pair, success := toPair(p); success != false {
+	if pair, isPair := p.(*Pair); isPair != false {
 		return pair.car
 	}
 	panic("Car called on non-pair")
@@ -154,7 +146,7 @@ func Car(p interface{}) interface{} {
 
 // Cdr get the second item of a Pair
 func Cdr(p interface{}) interface{} {
-	if pair, success := toPair(p); success != false {
+	if pair, isPair := p.(*Pair); isPair != false {
 		return pair.cdr
 	}
 	panic("Cdr called on non-pair")
