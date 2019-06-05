@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"bufio"
+	"strings"
+	"testing"
+)
 
 const checkMark = "\u2705"
 const xMark = "\u274c"
@@ -70,22 +74,51 @@ func TestTokenizer(t *testing.T) {
 }
 
 func TestTokenizerLeadingSpaces(t *testing.T) {
-	input := "   a"
-	width, token, err := scan([]byte(input), true)
-	if width != 4 || string(token) != "a" || err != nil {
-		t.Errorf("fail %v, %s, %v", width, token, err)
+	t.Log(`Testing tokenizer nomming leading spaces`)
+	{
+		input := "   a"
+		width, token, err := scan([]byte(input), true)
+		if width != 4 || string(token) != "a" || err != nil {
+			t.Errorf("\t%v fail %v, %s, %v", xMark, width, token, err)
+		}
+		t.Logf("\t%v  Pass!", checkMark)
+
+	}
+}
+
+func TestAddition(t *testing.T) {
+	t.Log(`Tetsing basic addition`)
+	{
+		input := "(+ 4 3)"
+		testScanner := bufio.NewScanner(strings.NewReader(input))
+		testScanner.Split(scan)
+		result := eval(processItem(testScanner))
+		if result != 7 {
+			t.Errorf("\t%v Result not OK: %v", xMark, result)
+		}
+	}
+
+	t.Log(`Testing nested addition`)
+	{
+		input := "(+ (+ 4 3) (+ 5 2))"
+		testScanner := bufio.NewScanner(strings.NewReader(input))
+		testScanner.Split(scan)
+		result := eval(processItem(testScanner))
+		if result != 14 {
+			t.Errorf("\t%v Result not OK: %v", xMark, result)
+		}
 	}
 }
 
 func TestPrintItem(t *testing.T) {
 	var p, Nil *Pair
 	p = nil
-	PrintItem(p) // should show ()
+	printItem(p) // should show ()
 
 	p = Cons("bar", Nil)
 	p = Cons("foo", p)
-	PrintItem(p) // should show (foo bar)
+	printItem(p) // should show (foo bar)
 
 	p = Cons(Cons("a", Nil), p)
-	PrintItem(p) // should show ((a) foo bar)
+	printItem(p) // should show ((a) foo bar) */
 }

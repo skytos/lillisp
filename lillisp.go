@@ -3,13 +3,68 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 	"unicode/utf8"
 )
 
+// Atom ...
+type Atom interface{}
+
+// Pair represents the fundamental "cons-pair" in LISP-like languages
 type Pair struct {
 	car interface{}
 	cdr interface{}
+}
+
+var funcMap = map[string]func(Atom, Atom) Atom{
+	"+": func(a Atom, b Atom) Atom { return toInt(a) + toInt(b) },
+	"-": func(a Atom, b Atom) Atom { return toInt(a) - toInt(b) },
+	"*": func(a Atom, b Atom) Atom { return toInt(a) * toInt(b) },
+	"/": func(a Atom, b Atom) Atom { return toInt(a) / toInt(b) },
+}
+
+func toInt(a Atom) int {
+	if val, ok := a.(int); ok == true {
+		return val
+	} else if val, ok := a.(string); ok == true {
+		if intVal, err := strconv.Atoi(val); err == nil {
+			return intVal
+		}
+	}
+
+	log.Panicf("Could not convert %v to Number\n", a)
+	return 0 // technically will never reach here
+}
+
+func toFunc(p interface{}) (func(a Atom, b Atom) Atom, bool) {
+	op, ok := p.(string)
+	if !ok {
+		return nil, false
+	}
+	if funcMap[op] == nil {
+		return nil, false
+	}
+	return funcMap[op], true
+}
+
+func eval(p interface{}) Atom {
+	if p == nil {
+		panic("Tried to eval nil!")
+	}
+
+	// p is an Atom, return it
+	if _, isPair := p.(*Pair); isPair == false {
+		return p
+	}
+
+	// if the first element is a function, recurse on the arguments
+	if op, success := toFunc(Car(p)); success != false {
+		return op(eval(Car(Cdr(p))), eval(Car(Cdr(Cdr(p)))))
+	}
+
+	panic("wtf are we doing here?!")
 }
 
 // isSpace reports whether the character is a Unicode white space character.
@@ -46,11 +101,12 @@ func scanWord(data []byte, start int, atEOF bool) (advance int, token []byte, er
 			return i, data[start:i], nil
 		}
 	}
+
 	if atEOF && len(data) > start {
 		return len(data), data[start:], nil
-	} else {
-		return 0, nil, nil
 	}
+
+	return 0, nil, nil
 }
 
 func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -75,27 +131,34 @@ func scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	}
 }
 
-// make a new Pair
+// Cons make a new Pair
 func Cons(a interface{}, b interface{}) *Pair {
 	return &Pair{a, b}
 }
 
-// get the first item of a Pair
-func Car(p *Pair) interface{} {
-	return p.car
+// Car get the first item of a Pair
+func Car(p interface{}) interface{} {
+	if pair, isPair := p.(*Pair); isPair != false {
+		return pair.car
+	}
+	panic("Car called on non-pair")
 }
 
-// get the second item of a Pair
-func Cdr(p *Pair) interface{} {
-	return p.cdr
+// Cdr get the second item of a Pair
+func Cdr(p interface{}) interface{} {
+	if pair, isPair := p.(*Pair); isPair != false {
+		return pair.cdr
+	}
+	panic("Cdr called on non-pair")
 }
 
-// make a list to represent the tokens being scanned
+// processList make a list to represent the tokens being scanned
 func processList(scanner *bufio.Scanner) *Pair {
 	if !scanner.Scan() {
 		panic("unmatched (") // we're in a list and ran out of tokens
 	}
 	token := scanner.Text()
+	fmt.Printf("token: %s\n", token)
 	if token == "(" {
 		// start a new list and then add that to the one we're currently working on
 		return Cons(processList(scanner), processList(scanner))
@@ -106,34 +169,41 @@ func processList(scanner *bufio.Scanner) *Pair {
 	}
 }
 
-// scan an item and print a representation of it, return true if more to do
-func processItem(scanner *bufio.Scanner) bool {
+// processItem scan an item and print a representation of it, return the list structure if the item is a list,
+// nil otherwise
+func processItem(scanner *bufio.Scanner) *Pair {
 	if !scanner.Scan() {
 		// out of tokens
-		return false
+		return nil
 	}
 	token := scanner.Text()
+
+	if token == "quit" {
+		os.Exit(0)
+	}
+
 	if token == "(" {
 		// start a new list
 		list := processList(scanner)
 		// and  print it
 		fmt.Print("list: ")
-		PrintItem(list)
+		printItem(list)
 		fmt.Println()
+		return list
 	} else if token == ")" {
 		// we're not in a list so we shouldn't see ")"
 		panic("unmatched )")
 	} else {
 		// must be an atom so print it
 		fmt.Print("atom: ")
-		PrintItem(token)
+		printItem(token)
 		fmt.Println()
+		return nil
 	}
-	return true
 }
 
-// print an item, duh
-func PrintItem(i interface{}) {
+// printItem print an item, duh
+func printItem(i interface{}) {
 	p, isPair := i.(*Pair)
 	if isPair {
 		fmt.Print("(")
@@ -152,19 +222,24 @@ func printList(l *Pair, addSpace bool) {
 	if l == nil {
 		// we're at the end of the list
 		return
-	} else {
-		if addSpace {
-			fmt.Print(" ") // so there's a gap between items
-		}
-		PrintItem(Car(l))
-		printList(Cdr(l).(*Pair), true) // print the rest, this assumes Cdr is a pair
 	}
+	if addSpace {
+		fmt.Print(" ") // so there's a gap between items
+	}
+	printItem(Car(l))
+	printList(Cdr(l).(*Pair), true) // print the rest, this assumes Cdr is a pair
 }
 
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(scan)
+
 	// read print loop
-	for processItem(scanner) {
+	for {
+		fmt.Print("lillisp> ")
+		list := processItem(scanner)
+		if list != nil {
+			fmt.Println(eval(list))
+		}
 	}
 }
